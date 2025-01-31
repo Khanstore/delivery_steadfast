@@ -13,7 +13,7 @@
                     </div>
                     <div class="o_setting_right_pane">
                                 <label for="module_delivery_steadfast"/>
-                                <a href="https://www.odoo.com/documentation/16.0/applications/inventory_and_mrp/inventory/shipping/setup/third_party_shipper.html" title="Documentation" class="o_doc_link" target="_blank"></a>
+                                <a href="https://www.khan-store.com/documentation/16.0/applications/inventory_and_mrp/inventory/shipping/setup/third_party_shipper.html" title="Documentation" class="o_doc_link" target="_blank"></a>
                                 <div class="text-muted">
                                     Compute shipping costs and ship with steadfast Courier
                                 </div>
@@ -40,7 +40,7 @@
                     </div>
                     <div class="o_setting_right_pane">
                         <label for="module_delivery_steadfast"/>
-                        <a href="https://www.odoo.com/documentation/16.0/applications/inventory_and_mrp/inventory/shipping/setup/third_party_shipper.html" title="Documentation" class="o_doc_link" target="_blank"></a>
+                        <a href="https://www.khan-store.com/documentation/16.0/applications/inventory_and_mrp/inventory/shipping/setup/third_party_shipper.html" title="Documentation" class="o_doc_link" target="_blank"></a>
                         <div class="text-muted">
                             Compute shipping costs and ship with SteadFast
                         </div>
