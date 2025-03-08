@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from flask import jsonify
-import binascii
-import math
+from datetime import datetime
+
 import re
 import json
 import requests
-from lxml import etree
 from odoo import fields, _,_lt
 
 
@@ -15,6 +13,7 @@ class steadFastRequest():
     def __init__(self, debug_logger, api_key, secret_key,  prod_environment):
         self.debug_logger = debug_logger
         if not prod_environment:
+            # fixme input test mode cresential here
             self.url = 'https://staging.ecourier.com.bd/api'
             # self.client_id="7N1aMJQbWm"
             # self.client_secret= "wRcaibZkUdSNz2EI9ZyuXLlNrnAv0TdPUPXMnD39"
@@ -98,6 +97,13 @@ class steadFastRequest():
             return str(eCourier_ERROR_MAP.get('120213'))
         return False
 
+    def convert_phone_number(self,phone_number):  # Remove country code and non-digit characters
+            phone_number = re.sub(r"\D", "", phone_number)
+            if phone_number.startswith("880"):
+                phone_number = phone_number[3:]
+                phone_number= "0" + phone_number
+            return phone_number
+            # phone_number = "+880 1720-569256" converted_number = convert_phone_number(phone_number) print(converted_number)
 
     def send_shipping(self, invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note):
         url= self.url + "/create_order"
@@ -111,7 +117,7 @@ class steadFastRequest():
             "invoice": invoice,
             #TODO get order id here
             "recipient_name": recipient_name,
-            "recipient_phone": recipient_phone,
+            "recipient_phone": self.convert_phone_number(recipient_phone),
             "recipient_address":recipient_address,
             "cod_amount": cod_amount,
             "note": note       }
@@ -155,8 +161,24 @@ class steadFastRequest():
             'CountryOfOrigin': line.warehouse_id.partner_id.country_id.name or ''
         }
 
-    def check_consignment_by_id(self,consignment_id):
-        url=self.url+ "/ status_by_cid /"+consignment_id
+    def track_by_code(self,tracking_code):
+        Headers = {
+            "Api-Key": self.api_key,
+            "Secret-Key": self.secret_key,
+            "Content-Type": "application/json"
+        }
+        url=self.url+ "/status_by_trackingcode/"+str(tracking_code)
+
+        response = requests.get(url,headers=Headers).json()
+        result={}
+        if response['status']==200:
+
+            result['tracking_id'] = tracking_code
+            result['our_reference'] = ""
+            result['delivery_status'] = response['delivery_status']
+            result['status_on']=''
+            result['tracking_time']=datetime.now()
+
+        return result
 
 
-        Method: GET

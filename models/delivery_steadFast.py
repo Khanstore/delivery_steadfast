@@ -18,6 +18,7 @@ class ResConfigSettings(models.TransientModel):
 class ProviderSteadFast(models.Model):
     _inherit = 'delivery.carrier'
 
+
     def _get_steadfast_service_types(self):
         #     pathao delivery types 48 for normal delivery
         return [
@@ -71,7 +72,7 @@ class ProviderSteadFast(models.Model):
         if partner.state_id:
             recipient_address = recipient_address + partner.state_id.name+ ", "
         #todo set COD Amount Here
-        cod_amount=100
+        cod_amount=0
         note="note"
         # Fixme
         response=req.send_shipping(invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note)
@@ -110,33 +111,40 @@ class ProviderSteadFast(models.Model):
 
         return res
 
-    def steadfast_get_tracking_link(self,picking_id):
+    def tracking_result(self, tracking_id):
+        ''' Track the package to the service provider
+
+        :param pickings: A recordset of pickings
+        :return list: A list of dictionaries (one per picking) containing of the form::
+                         { 'exact_price': price,
+                           'tracking_number': number }
+                           # TODO missing labels per package
+                           # TODO missing currency
+                           # TODO missing success, error, warnings
+        '''
+        self.ensure_one()
+        if hasattr(self, '%s_tracking_result' % self.delivery_type):
+            return getattr(self, '%s_tracking_result' % self.delivery_type)(tracking_id)
+
+    def steadfast_tracking_result(self, tracking_id):
+        res = []
+        superself = self.sudo()
+        req = steadFastRequest(self.log_xml, superself.steadfast_api_key, superself.steadfast_secret_key,
+                               superself.prod_environment)
+        return req.track_by_code(tracking_id)
+
+def track_parcel(self,picking_id):
         return 'https://steadfast.com.bd/t/%s' % picking_id.carrier_tracking_ref
-    # #Todo following function get errors
-    # def pathao_get_parcel_status(self,consignment_id):
-    #     superself = self.sudo()
-    #     req = pathaoRequest(self.log_xml, superself.pathao_client_id, superself.pathao_client_secret,
-    #                         superself.pathao_client_email, superself.pathao_client_password, superself.store_id,
-    #                         self.prod_environment)
-    #     url = req.url + "/aladdin/api/v1/orders/{"+ consignment_id +"}/info"
-    #     token = req.pathao_get_token()
-    #
-    #     Headers= {
-    #         "Authorization": "Bearer "+token,
-    #         "Content - Type": "application/json",
-    #         "Accept": "application/json"
-    #     }
-    #     payloads={}
-    #     response=requests.get(url,headers=Headers,data=json.dumps(payloads))
-    #     if response.json()['type']=="error":
-    #         raise UserError(response.json()['message'].__str__())
-    #     else:
-    #         return response
+
 
 
 
 class stockPicking(models.Model):
     _inherit = "stock.picking"
+
+    carrier_tracking_status=fields.Char("Tracking Status",default="N/A")
+    carrier_tracking_time=fields.Datetime(string='Tracked On')
+    tracking_status_changed_on=fields.Datetime(string='Status Changed On')
 
     def get_tracking_link(self):
         self.ensure_one()
@@ -147,3 +155,10 @@ class stockPicking(models.Model):
                 'target': 'new',
                 'url': url
                 }
+    def track_parcel(self):
+        tracking_id=self.carrier_tracking_ref
+        result=self.carrier_id.tracking_result(tracking_id)
+        self.carrier_tracking_status=result["delivery_status"]
+        if result['status_on']:
+            self.tracking_status_changed_on=result["status_on"]
+        self.carrier_tracking_time=result["tracking_time"]
