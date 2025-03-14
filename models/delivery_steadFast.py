@@ -28,8 +28,8 @@ class ProviderSteadFast(models.Model):
     delivery_type = fields.Selection(selection_add=[
         ('steadfast', "SteadFast")
     ], ondelete={'steadfast': lambda recs: recs.write({'delivery_type': 'fixed', 'fixed_price': 0})})
-    steadfast_api_key=fields.Char("API Key ID") #"7N1aMJQbWm"
-    steadfast_secret_key =fields.Char("Secret Key") # "wRcaibZkUdSNz2EI9ZyuXLlNrnAv0TdPUPXMnD39"
+    steadfast_api_key=fields.Char("API Key ID")
+    steadfast_secret_key =fields.Char("Secret Key")
 
     def steadfast_rate_shipment(self, order):
         superself = self.sudo()
@@ -72,7 +72,15 @@ class ProviderSteadFast(models.Model):
         if partner.state_id:
             recipient_address = recipient_address + partner.state_id.name+ ", "
         #todo set COD Amount Here
-        cod_amount=0
+        # for online orders Check if payment method COD is selected
+        payment_transaction = self.env['payment.transaction'].search([('reference', '=', piking_id.sale_id.name)])
+        payment_provider=payment_transaction.provider_id
+        provider_xml_id=payment_provider.get_external_id()[payment_provider.id]
+        # here to varify COD transaction method
+        if provider_xml_id=='payment.payment_provider_transfer':
+            cod_amount=piking_id.sale_id.amount_total
+        else:
+            cod_amount=0
         note="note"
         # Fixme
         response=req.send_shipping(invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note)
