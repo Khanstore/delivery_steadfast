@@ -18,6 +18,9 @@ class ResConfigSettings(models.TransientModel):
 class ProviderSteadFast(models.Model):
     _inherit = 'delivery.carrier'
 
+    related_journal = fields.Many2one('account.journal', string='Related Journal')
+
+
 
     def _get_steadfast_service_types(self):
         #     pathao delivery types 48 for normal delivery
@@ -49,14 +52,14 @@ class ProviderSteadFast(models.Model):
 
         return data
 
-    def steadfast_send_shipping(self,piking_id):
+    def steadfast_send_shipping(self,picking_id):
         res = []
         superself = self.sudo()
         req = steadFastRequest(self.log_xml, superself.steadfast_api_key, superself.steadfast_secret_key, superself.prod_environment)
 
-        partner=piking_id.partner_id
+        partner=picking_id.partner_id
         #steadFast supports letters,Numbers,dashes in Invoice String
-        invoice=piking_id.name.replace("/","-")
+        invoice=picking_id.name.replace("/","-")
         recipient_name=partner.name
         if partner.mobile:
             recipient_phone=partner.mobile
@@ -73,14 +76,18 @@ class ProviderSteadFast(models.Model):
             recipient_address = recipient_address + partner.state_id.name+ ", "
         #todo set COD Amount Here
         # for online orders Check if payment method COD is selected
-        payment_transaction = self.env['payment.transaction'].search([('reference', '=', piking_id.sale_id.name)])
+        payment_transaction = self.env['payment.transaction'].search([('reference', '=', picking_id.sale_id.name)])
         payment_provider=payment_transaction.provider_id
-        provider_xml_id=payment_provider.get_external_id()[payment_provider.id]
-        # here to varify COD transaction method
-        if provider_xml_id=='payment.payment_provider_transfer':
-            cod_amount=piking_id.sale_id.amount_total
-        else:
-            cod_amount=0
+        if picking_id.is_cash_on_delivery:
+            cod_amount = picking_id.cod_amount
+        # if payment_provider.id:
+        #
+        #     provider_xml_id=payment_provider.get_external_id()[payment_provider.id]
+        #     # here to varify COD transaction method
+        #     if provider_xml_id=='payment.payment_provider_transfer':
+        #         cod_amount=picking_id.sale_id.amount_total
+        # else:
+        #     cod_amount=0
         note="note"
         # Fixme
         response=req.send_shipping(invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note)
@@ -93,11 +100,11 @@ class ProviderSteadFast(models.Model):
 
             raise UserError(msg.__str__())
 
-        order = piking_id.sale_id
-        company = order.company_id or piking_id.company_id or self.env.company
-        currency_order = piking_id.sale_id.currency_id
+        order = picking_id.sale_id
+        company = order.company_id or picking_id.company_id or self.env.company
+        currency_order = picking_id.sale_id.currency_id
         if not currency_order:
-            currency_order = piking_id.company_id.currency_id
+            currency_order = picking_id.company_id.currency_id
         # Fixme Price =??
         price=123
         # price = float(result['data']['delivery_fee'])
@@ -118,6 +125,11 @@ class ProviderSteadFast(models.Model):
         res = res + [shipping_data]
 
         return res
+
+    def steadfast_get_tracking_link(self, picking):
+        return 'https://steadfast.com.bd/t/' + picking.carrier_tracking_ref
+
+
 
     def tracking_result(self, tracking_id):
         ''' Track the package to the service provider
@@ -149,10 +161,11 @@ def track_parcel(self,picking_id):
 
 class stockPicking(models.Model):
     _inherit = "stock.picking"
-
+    cod_amount=fields.Float(string='COD Amount',  default=0.0)
     carrier_tracking_status=fields.Char("Tracking Status",default="N/A")
     carrier_tracking_time=fields.Datetime(string='Tracked On')
     tracking_status_changed_on=fields.Datetime(string='Status Changed On')
+
 
     def get_tracking_link(self):
         self.ensure_one()

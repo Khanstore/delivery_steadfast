@@ -19,7 +19,16 @@
       <field name="name">SteadFast Curier</field>
       <field name="delivery_type">steadfast</field>
       <field name="product_id" ref="delivery_steadfast.product_product_delivery_steadfast"/>
+        <field name="related_journal_id" ref="delivery_steadfast.steadfast_journal"/>
     </record>
 
+
+    <record id="steadfast_journal" model="account.journal">
+      <field name="name">SteadFast Courier</field>
+      <field name="code">SFC</field>
+      <field name="type">bank</field>
+      <field name="company_id" ref="base.main_company"/>
+      <field name="currency_id" ref="base.BDT"/>
+    </record>
 </data>
 </odoo>

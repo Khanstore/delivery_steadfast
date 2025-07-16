@@ -13,14 +13,8 @@ class steadFastRequest():
     def __init__(self, debug_logger, api_key, secret_key,  prod_environment):
         self.debug_logger = debug_logger
         if not prod_environment:
-            # fixme input test mode cresential here
-            self.url = 'https://staging.ecourier.com.bd/api'
-            # self.client_id="7N1aMJQbWm"
-            # self.client_secret= "wRcaibZkUdSNz2EI9ZyuXLlNrnAv0TdPUPXMnD39"
-            # self.client_email="test@ecourier.com"
-            # self.client_password="loveeCourier"
-            # self.grant_type="password"
-            # self.store_id=55811 # sandbox test store_id 55811
+            # fixme input test mode credential here
+            print("steadfast doesnt have any test credentials")
 
         else:
             self.url = 'https://portal.packzy.com/api/v1'

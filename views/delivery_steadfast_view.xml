@@ -26,9 +26,6 @@
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock_delivery.view_picking_withcarrier_out_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='carrier_tracking_ref']" position="before">
-                <field name="carrier_tracking_ref"/>
-            </xpath>
             <label for="weight" position="before">
                 <button name="track_parcel" string="Track Now" type="object" class="oe_highlight"/>
                 <field name="carrier_tracking_status"/>
