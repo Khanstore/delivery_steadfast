@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from email.policy import default
+import logging
+
+_logger = logging.getLogger(__name__)
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -26,16 +29,21 @@ class ProviderSteadFast(models.Model):
         #     pathao delivery types 48 for normal delivery
         return [
             ('48', 'Normal Delivery'),
-            # ('11', 'Pathao Standard'),
+            # ('11', 'steadfast Standard'),
             ]
     delivery_type = fields.Selection(selection_add=[
         ('steadfast', "SteadFast")
     ], ondelete={'steadfast': lambda recs: recs.write({'delivery_type': 'fixed', 'fixed_price': 0})})
     steadfast_api_key=fields.Char("API Key ID")
     steadfast_secret_key =fields.Char("Secret Key")
+    steadfast_call_back_url=fields.Char("Call back URL")
+    steadfast_auth_token=fields.Char("Auth Token")
+
 
     def steadfast_rate_shipment(self, order):
         superself = self.sudo()
+        # todo this line used to test Webhook, uncomment to use
+        # self.send_test_webhook()
         req = steadFastRequest(self.log_xml, self.steadfast_api_key, self.steadfast_secret_key, self.prod_environment)
         ResCurrency = self.env['res.currency']
 
@@ -51,7 +59,36 @@ class ProviderSteadFast(models.Model):
             return False
 
         return data
-
+    #  Fixme following lines are for testing webhook, uncomment to use
+    # def send_test_webhook(self):
+    #     for order in self:
+    #         # Use real picking/tracking ID if available
+    #         # picking = order.picking_ids[:1]
+    #         # tracking_id = picking.carrier_tracking_ref if picking else order.id
+    #
+    #         data={
+    #             "notification_type": "delivery_status",
+    #             "consignment_id": 162802040,
+    #             "invoice": "INV-67890",
+    #             "cod_amount": 1500.00,
+    #             "status": "Delivered",
+    #             "delivery_charge": 100.00,
+    #             "tracking_message": "Your package has been delivered successfully.",
+    #             "updated_at": "2025-03-02 12:45:30"
+    #         }
+    #
+    #         url = 'http://localhost:8070/delivery/steadfast/callback'
+    #         headers = {
+    #             'Content-Type': 'application/json',
+    #             'Authorization': 'Bearer supersecrettoken123'  # 👈 match the token
+    #         }
+    #
+    #         try:
+    #             resp = requests.post(url, json=data, headers=headers, timeout=10)
+    #             resp.raise_for_status()
+    #             _logger.info("Webhook sent successfully: %s", resp.json())
+    #         except Exception as e:
+    #             _logger.exception("Failed to send webhook")
     def steadfast_send_shipping(self,picking_id):
         res = []
         superself = self.sudo()
@@ -63,8 +100,11 @@ class ProviderSteadFast(models.Model):
         recipient_name=partner.name
         if partner.mobile:
             recipient_phone=partner.mobile
+            alternative_phone = partner.mobile if partner.mobile else ""
         else:
             recipient_phone = partner.phone
+        alternative_phone = partner.phone if partner.mobile else""
+        recipient_email=partner.email if partner.email else ""
         recipient_address=""
         if partner.street:
             recipient_address=partner.street + ", "
@@ -78,8 +118,8 @@ class ProviderSteadFast(models.Model):
         # for online orders Check if payment method COD is selected
         payment_transaction = self.env['payment.transaction'].search([('reference', '=', picking_id.sale_id.name)])
         payment_provider=payment_transaction.provider_id
-        if picking_id.is_cash_on_delivery:
-            cod_amount = picking_id.cod_amount
+        cod_amount = picking_id.cod_amount if picking_id.is_cash_on_delivery else 0
+
         # if payment_provider.id:
         #
         #     provider_xml_id=payment_provider.get_external_id()[payment_provider.id]
@@ -90,7 +130,7 @@ class ProviderSteadFast(models.Model):
         #     cod_amount=0
         note="note"
         # Fixme
-        response=req.send_shipping(invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note)
+        response=req.send_shipping(invoice, recipient_name, recipient_phone,alternative_phone,recipient_email, recipient_address, cod_amount, note)
         result = response.json()
         # response={'status': 200, 'message': 'Consignment has been created successfully.', 'consignment': {'consignment_id': 106743223, 'invoice': 'WH-OUT-00026', 'tracking_code': '65CC5B783A7', 'recipient_name': 'Oscar Morgan', 'recipient_phone': '01777777777', 'recipient_address': '317 Fairchild Dr, Fairfield, California,', 'cod_amount': 100, 'status': 'in_review', 'note': 'note', 'created_at': '2024-11-03T11:01:59.000000Z', 'updated_at': '2024-11-03T11:01:59.000000Z'}}
         # result = response
@@ -123,7 +163,7 @@ class ProviderSteadFast(models.Model):
             'exact_price': price,
             'tracking_number': carrier_tracking_ref}
         res = res + [shipping_data]
-
+        picking_id.consignment_id= result['consignment']['consignment_id']
         return res
 
     def steadfast_get_tracking_link(self, picking):
@@ -165,7 +205,7 @@ class stockPicking(models.Model):
     carrier_tracking_status=fields.Char("Tracking Status",default="N/A")
     carrier_tracking_time=fields.Datetime(string='Tracked On')
     tracking_status_changed_on=fields.Datetime(string='Status Changed On')
-
+    consignment_id = fields.Integer("Consignment ID")
 
     def get_tracking_link(self):
         self.ensure_one()

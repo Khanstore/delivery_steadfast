@@ -13,6 +13,8 @@
                         <group>
                             <field name="steadfast_api_key" modifiers="{'required': [('delivery_type', '=', 'steadfast')]}"/>
                             <field name="steadfast_secret_key" modifiers="{'required': [('delivery_type', '=', 'steadfast')]}"/>
+                            <field name="steadfast_call_back_url" modifiers="{'required': [('delivery_type', '=', 'steadfast')]}"/>
+                            <field name="steadfast_auth_token" modifiers="{'required': [('delivery_type', '=', 'steadfast')]}"/>
                         </group>
 
                     </group>
