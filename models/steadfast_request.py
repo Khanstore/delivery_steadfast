@@ -91,7 +91,8 @@ class steadFastRequest():
             return str(eCourier_ERROR_MAP.get('120213'))
         return False
 
-    def convert_phone_number(self,phone_number):  # Remove country code and non-digit characters
+    def convert_phone_number(self,phone_number):
+        # Remove country code and non-digit characters
             phone_number = re.sub(r"\D", "", phone_number)
             if phone_number.startswith("880"):
                 phone_number = phone_number[3:]
@@ -112,11 +113,13 @@ class steadFastRequest():
             #TODO get order id here
             "recipient_name": recipient_name,
             "recipient_phone": self.convert_phone_number(recipient_phone),
-            "alternative_phone": self.convert_phone_number(alternative_phone),
+
             "recipient_email": recipient_email,
             "recipient_address":recipient_address,
             "cod_amount": cod_amount,
             "note": note       }
+        if alternative_phone !="":
+            json_data['alternative_phone']=self.convert_phone_number(alternative_phone)
         response = requests.post(url, data=json.dumps(json_data), headers=Headers)
 
         return response

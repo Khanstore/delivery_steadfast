@@ -100,10 +100,10 @@ class ProviderSteadFast(models.Model):
         recipient_name=partner.name
         if partner.mobile:
             recipient_phone=partner.mobile
-            alternative_phone = partner.mobile if partner.mobile else ""
+            alternative_phone = partner.phone if partner.phone else ""
         else:
             recipient_phone = partner.phone
-        alternative_phone = partner.phone if partner.mobile else""
+            # alternative_phone = partner.phone if partner.phone else""
         recipient_email=partner.email if partner.email else ""
         recipient_address=""
         if partner.street:
