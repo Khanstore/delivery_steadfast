@@ -6,6 +6,9 @@
         <field name="model">delivery.carrier</field>
         <field name="inherit_id" ref="delivery.view_delivery_carrier_form"/>
         <field name="arch" type="xml">
+            <field name="product_id" position="before">
+                <field name="related_journal"  />
+            </field>
             <xpath expr="//page[@name='destination']" position='before'>
                 <page string="SteadFast Configuration" name="steadfast_configuration"
                     modifiers="{'invisible': [('delivery_type', '!=', 'steadfast')]}">

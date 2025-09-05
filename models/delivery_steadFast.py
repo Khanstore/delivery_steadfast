@@ -103,7 +103,7 @@ class ProviderSteadFast(models.Model):
             alternative_phone = partner.phone if partner.phone else ""
         else:
             recipient_phone = partner.phone
-            # alternative_phone = partner.phone if partner.phone else""
+            alternative_phone = ""
         recipient_email=partner.email if partner.email else ""
         recipient_address=""
         if partner.street:
@@ -146,7 +146,7 @@ class ProviderSteadFast(models.Model):
         if not currency_order:
             currency_order = picking_id.company_id.currency_id
         # Fixme Price =??
-        price=123
+        price=cod_amount
         # price = float(result['data']['delivery_fee'])
         carrier_tracking_ref = result['consignment']['tracking_code']
         # following lines for sending message, since odoo sents message automatically for i in is not longer needed:
