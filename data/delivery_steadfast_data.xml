@@ -13,16 +13,6 @@
       <field name="list_price">0.0</field>
       <field name="invoice_policy">order</field>
     </record>
-
-
-    <record id="delivery_carrier_steadfast" model="delivery.carrier">
-      <field name="name">SteadFast Curier</field>
-      <field name="delivery_type">steadfast</field>
-      <field name="product_id" ref="delivery_steadfast.product_product_delivery_steadfast"/>
-        <field name="related_journal_id" ref="delivery_steadfast.steadfast_journal"/>
-    </record>
-
-
     <record id="steadfast_journal" model="account.journal">
       <field name="name">SteadFast Courier</field>
       <field name="code">SFC</field>
@@ -30,5 +20,15 @@
       <field name="company_id" ref="base.main_company"/>
       <field name="currency_id" ref="base.BDT"/>
     </record>
+
+    <record id="delivery_carrier_steadfast" model="delivery.carrier">
+      <field name="name">SteadFast Curier</field>
+      <field name="delivery_type">steadfast</field>
+      <field name="product_id" ref="delivery_steadfast.product_product_delivery_steadfast"/>
+        <field name="related_journal" ref="delivery_steadfast.steadfast_journal"/>
+    </record>
+
+
+
 </data>
 </odoo>

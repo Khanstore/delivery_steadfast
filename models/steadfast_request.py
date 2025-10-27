@@ -134,6 +134,9 @@ class steadFastRequest():
         for line in lines:
             line_weight=line.product_id.weight*line.product_uom_qty
             weight=line_weight+weight
+        peaking_address=order.company_id.partner_id
+        delivery_address=order.partner_shipping_id
+
 
         if weight <= 0.5:
             price = 110 # 110 tk for <.5kg
