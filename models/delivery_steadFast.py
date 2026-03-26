@@ -130,7 +130,9 @@ class ProviderSteadFast(models.Model):
         #     cod_amount=0
         note="note"
         # Fixme
-        response=req.send_shipping(invoice, recipient_name, recipient_phone,alternative_phone,recipient_email, recipient_address, cod_amount, note)
+        item_description="Book"
+
+        response=req.send_shipping(invoice, recipient_name, recipient_phone,alternative_phone,recipient_email, recipient_address, cod_amount, note,item_description)
         result = response.json()
         # response={'status': 200, 'message': 'Consignment has been created successfully.', 'consignment': {'consignment_id': 106743223, 'invoice': 'WH-OUT-00026', 'tracking_code': '65CC5B783A7', 'recipient_name': 'Oscar Morgan', 'recipient_phone': '01777777777', 'recipient_address': '317 Fairchild Dr, Fairfield, California,', 'cod_amount': 100, 'status': 'in_review', 'note': 'note', 'created_at': '2024-11-03T11:01:59.000000Z', 'updated_at': '2024-11-03T11:01:59.000000Z'}}
         # result = response

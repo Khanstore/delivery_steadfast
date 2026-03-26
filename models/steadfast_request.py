@@ -100,7 +100,7 @@ class steadFastRequest():
             return phone_number
             # phone_number = "+880 1720-569256" converted_number = convert_phone_number(phone_number) print(converted_number)
 
-    def send_shipping(self, invoice, recipient_name, recipient_phone, alternative_phone,recipient_email,recipient_address, cod_amount, note):
+    def send_shipping(self, invoice, recipient_name, recipient_phone, alternative_phone,recipient_email,recipient_address, cod_amount, note,item_description):
         url= self.url + "/create_order"
 
         Headers= {
@@ -117,7 +117,8 @@ class steadFastRequest():
             "recipient_email": recipient_email,
             "recipient_address":recipient_address,
             "cod_amount": cod_amount,
-            "note": note       }
+            "note": note,
+            "item_description":item_description}
         if alternative_phone !="":
             json_data['alternative_phone']=self.convert_phone_number(alternative_phone)
 
