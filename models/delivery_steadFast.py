@@ -131,8 +131,19 @@ class ProviderSteadFast(models.Model):
         note="note"
         # Fixme
         item_description="Book"
+        data={'invoice': invoice,
+              'recipient_name': recipient_name,
+              'recipient_phone': req.convert_phone_number(recipient_phone),
+              'alternative_phone': req.convert_phone_number(alternative_phone),
+              'recipient_email': recipient_email,
+              'recipient_address': recipient_address,
+              'cod_amount': cod_amount,
+              'note': note,
+              'item_description': item_description,
+              'delivery_type': 0,# 0 for home delivery, 1 for office delivery
 
-        response=req.send_shipping(invoice, recipient_name, recipient_phone,alternative_phone,recipient_email, recipient_address, cod_amount, note,item_description)
+        }
+        response=req.send_shipping(data)
         result = response.json()
         # response={'status': 200, 'message': 'Consignment has been created successfully.', 'consignment': {'consignment_id': 106743223, 'invoice': 'WH-OUT-00026', 'tracking_code': '65CC5B783A7', 'recipient_name': 'Oscar Morgan', 'recipient_phone': '01777777777', 'recipient_address': '317 Fairchild Dr, Fairfield, California,', 'cod_amount': 100, 'status': 'in_review', 'note': 'note', 'created_at': '2024-11-03T11:01:59.000000Z', 'updated_at': '2024-11-03T11:01:59.000000Z'}}
         # result = response
