@@ -1,0 +1,5 @@
+<odoo noupdate="1">
+ <record id="seq_steadfast_shipment" model="ir.sequence"><field name="name">Steadfast Shipment</field><field name="code">steadfast.shipment</field><field name="prefix">SF/</field><field name="padding">6</field></record>
+ <record id="seq_steadfast_return" model="ir.sequence"><field name="name">Steadfast Return Request</field><field name="code">steadfast.return.request</field><field name="prefix">SFR/</field><field name="padding">6</field></record>
+ <record id="seq_steadfast_pickup" model="ir.sequence"><field name="name">Steadfast Pickup Request</field><field name="code">steadfast.pickup.request</field><field name="prefix">SFP/</field><field name="padding">6</field></record>
+</odoo>

@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_steadfast_shipment_user,steadfast.shipment.user,model_steadfast_shipment,base.group_user,1,1,1,0
+access_steadfast_tracking_user,steadfast.tracking.event.user,model_steadfast_tracking_event,base.group_user,1,1,1,0
+access_steadfast_return_user,steadfast.return.request.user,model_steadfast_return_request,base.group_user,1,1,1,0
+access_steadfast_pickup_user,steadfast.pickup.request.user,model_steadfast_pickup_request,base.group_user,1,1,1,0
+access_steadfast_payment_user,steadfast.payment.user,model_steadfast_payment,base.group_user,1,1,1,0
+access_steadfast_log_manager,steadfast.api.log.manager,model_steadfast_api_log,base.group_system,1,0,0,0
+access_steadfast_webhook_manager,steadfast.webhook.event.manager,model_steadfast_webhook_event,base.group_system,1,1,1,1
+access_steadfast_tool_user,steadfast.api.tool.user,model_steadfast_api_tool,base.group_user,1,1,1,1
+access_steadfast_webhook_event_user,steadfast.webhook.event.user,model_steadfast_webhook_event,base.group_user,1,0,0,0
+access_steadfast_pickup_location_user,steadfast.pickup.location.user,model_steadfast_pickup_location,base.group_user,1,1,1,0
+access_steadfast_pricing_wizard_user,steadfast.pricing.wizard.user,model_steadfast_pricing_wizard,base.group_user,1,1,1,0
+access_steadfast_cod_confirm_wizard_user,steadfast.cod.confirm.wizard.user,model_steadfast_cod_confirm_wizard,base.group_user,1,1,1,1

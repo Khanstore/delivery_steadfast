@@ -1,0 +1,12 @@
+<odoo>
+    <menuitem id="menu_steadfast_root" name="Steadfast Courier" sequence="50" groups="base.group_user" web_icon="delivery_steadfast,static/description/icon.png"/>
+    <menuitem id="menu_steadfast_shipments" name="Shipments" parent="menu_steadfast_root" action="action_steadfast_shipments" sequence="10"/>
+    <menuitem id="menu_steadfast_tracking" name="Tracking History" parent="menu_steadfast_root" action="action_steadfast_tracking" sequence="20"/>
+    <menuitem id="menu_steadfast_returns" name="Return Requests" parent="menu_steadfast_root" action="action_steadfast_returns" sequence="30"/>
+    <menuitem id="menu_steadfast_pickups" name="Pickup Requests" parent="menu_steadfast_root" action="action_steadfast_pickups" sequence="40"/>
+    <menuitem id="menu_steadfast_pickup_locations" name="Pickup Locations" parent="menu_steadfast_root" action="action_steadfast_pickup_locations" sequence="45"/>
+    <menuitem id="menu_steadfast_payments" name="Payments" parent="menu_steadfast_root" action="action_steadfast_payments" sequence="50"/>
+    <menuitem id="menu_steadfast_tools" name="API Tools" parent="menu_steadfast_root" action="action_steadfast_tools" sequence="80"/>
+    <menuitem id="menu_steadfast_logs" name="API Logs" parent="menu_steadfast_root" action="action_steadfast_logs" sequence="90" groups="base.group_system"/>
+    <menuitem id="menu_steadfast_webhook_events" name="Webhook Events" parent="menu_steadfast_root" action="action_steadfast_webhook_events" sequence="25"/>
+</odoo>

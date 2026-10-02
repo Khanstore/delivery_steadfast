@@ -1,0 +1,82 @@
+<odoo>
+    <record id="view_delivery_carrier_form_steadfast" model="ir.ui.view">
+        <field name="name">delivery.carrier.form.steadfast</field>
+        <field name="model">delivery.carrier</field>
+        <field name="inherit_id" ref="delivery.view_delivery_carrier_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='delivery_details']" position="inside">
+                <separator string="Steadfast Courier" invisible="delivery_type != 'steadfast'"/>
+                <field name="related_journal" string="Steadfast COD Journal" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_cod_receivable_account" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_api_url" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_api_key" invisible="delivery_type != 'steadfast'" widget="password"/>
+                <field name="steadfast_secret_key" invisible="delivery_type != 'steadfast'" widget="password"/>
+                <field name="steadfast_timeout" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_auto_sync" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_webhook_enabled" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_webhook_token" invisible="delivery_type != 'steadfast'" widget="password"/>
+                <field name="steadfast_webhook_path" invisible="delivery_type != 'steadfast'" readonly="1"/>
+                <field name="steadfast_auto_book" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_cod_from_order" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_default_route" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_default_pickup_location_id" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_tracking_base_url" invisible="delivery_type != 'steadfast'"/>
+            </xpath>
+            <xpath expr="//group[@name='delivery_details']" position="after">
+                <group string="Steadfast Local Pricing" invisible="delivery_type != 'steadfast'">
+                    <group string="Base Delivery Charges">
+                        <field name="steadfast_inside_dhaka_charge"/>
+                        <field name="steadfast_dhaka_suburban_charge"/>
+                        <field name="steadfast_dhaka_outside_charge"/>
+                        <field name="steadfast_suburban_outside_charge"/>
+                        <field name="steadfast_outside_same_city_charge"/>
+                    </group>
+                    <group string="Weight &amp; COD Rules">
+                        <field name="steadfast_base_weight_kg"/>
+                        <field name="steadfast_extra_weight_step_kg"/>
+                        <field name="steadfast_extra_weight_charge"/>
+                        <field name="steadfast_cod_fee_percent"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_steadfast_test_connection" type="object" string="Test Steadfast" class="oe_stat_button" icon="fa-plug" invisible="delivery_type != 'steadfast'"/>
+                <button name="action_steadfast_refresh_balance" type="object" string="Refresh Balance" class="oe_stat_button" icon="fa-money" invisible="delivery_type != 'steadfast'"/>
+            </xpath>
+            <xpath expr="//field[@name='debug_logging']" position="after">
+                <field name="steadfast_last_balance" invisible="delivery_type != 'steadfast'"/>
+                <field name="steadfast_last_balance_sync" invisible="delivery_type != 'steadfast'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_steadfast_pickup_location_list" model="ir.ui.view">
+        <field name="name">steadfast.pickup.location.list</field>
+        <field name="model">steadfast.pickup.location</field>
+        <field name="arch" type="xml"><list><field name="name"/><field name="carrier_id"/><field name="sender_name"/><field name="sender_phone"/><field name="city"/><field name="active"/></list></field>
+    </record>
+    <record id="view_steadfast_pickup_location_form" model="ir.ui.view">
+        <field name="name">steadfast.pickup.location.form</field>
+        <field name="model">steadfast.pickup.location</field>
+        <field name="arch" type="xml">
+            <form string="Steadfast Pickup Location">
+                <sheet>
+                    <group>
+                        <group><field name="name"/><field name="carrier_id"/><field name="sequence"/><field name="active"/></group>
+                        <group><field name="sender_name"/><field name="sender_phone"/><field name="sender_email"/></group>
+                    </group>
+                    <group string="Pickup Address">
+                        <field name="address"/>
+                        <field name="city"/>
+                        <field name="state"/>
+                        <field name="zip"/>
+                        <field name="country"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_steadfast_pickup_locations" model="ir.actions.act_window">
+        <field name="name">Pickup Locations</field><field name="res_model">steadfast.pickup.location</field><field name="view_mode">list,form</field>
+    </record>
+</odoo>

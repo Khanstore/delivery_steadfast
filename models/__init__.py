@@ -1,3 +1,11 @@
-# -*- coding: utf-8 -*-
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
-from . import delivery_steadFast
+from . import delivery_carrier
+from . import stock_picking
+from . import steadfast_shipment
+from . import steadfast_tracking
+from . import steadfast_return
+from . import steadfast_pricing
+from . import steadfast_pickup
+from . import steadfast_payment
+from . import steadfast_log
+from . import steadfast_tools
+from . import steadfast_webhook

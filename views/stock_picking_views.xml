@@ -1,0 +1,65 @@
+<odoo>
+ <record id="view_stock_picking_form_steadfast" model="ir.ui.view">
+  <field name="name">stock.picking.form.steadfast</field>
+  <field name="model">stock.picking</field>
+  <field name="inherit_id" ref="stock.view_picking_form"/>
+  <field name="arch" type="xml">
+   <xpath expr="//button[@name='send_to_shipper']" position="attributes">
+    <attribute name="invisible">carrier_id.delivery_type == 'steadfast'</attribute>
+   </xpath>
+   <xpath expr="//header" position="inside">
+    <button name="action_steadfast_send_to_shipper" type="object" string="Send to Steadfast" class="btn-primary"
+            invisible="carrier_id.delivery_type != 'steadfast'"
+            icon="fa-truck"/>
+   </xpath>
+   <xpath expr="//div[@name='button_box']" position="inside">
+    <button name="action_open_steadfast_shipment" type="object" class="oe_stat_button" icon="fa-truck" invisible="carrier_id.delivery_type != 'steadfast'"><field name="steadfast_shipment_count" widget="statinfo" string="Steadfast"/></button>
+   </xpath>
+   <xpath expr="//field[@name='carrier_id']" position="after">
+    <group string="Steadfast Delivery" invisible="carrier_id.delivery_type != 'steadfast'" colspan="2">
+     <group string="Pickup &amp; Pricing">
+      <field name="steadfast_is_carrier" invisible="1"/>
+      <field name="steadfast_pickup_location_id"/>
+      <field name="steadfast_route"/>
+      <field name="steadfast_weight" readonly="1"/>
+      <button name="action_steadfast_calculate_price" type="object" string="Calculate Steadfast Price" icon="fa-calculator" class="btn-secondary"/>
+     </group>
+     <group string="COD / Cash Collection">
+      <field name="steadfast_cod_enabled"/>
+      <field name="steadfast_order_cod_amount" invisible="not steadfast_cod_enabled"
+             string="Order COD Amount" readonly="1"/>
+      <field name="steadfast_cod_amount" invisible="not steadfast_cod_enabled"
+             string="Steadfast COD Amount"
+             readonly="steadfast_cod_confirmed"/>
+      <field name="steadfast_cod_confirmed" readonly="1" invisible="not steadfast_cod_enabled" widget="boolean"/>
+      <button name="action_steadfast_set_cod_amount" type="object" string="Use Order COD Amount"
+              invisible="not steadfast_cod_enabled" icon="fa-copy"/>
+      <button name="action_steadfast_confirm_cod_wizard" type="object" string="Confirm COD Amount"
+              class="btn-primary" invisible="not steadfast_cod_enabled or steadfast_cod_confirmed" icon="fa-check"/>
+      <div class="text-muted" invisible="not steadfast_cod_enabled">
+       This COD amount will be sent to Steadfast for collection from the customer.
+      </div>
+     </group>
+     <group string="Charge Breakdown">
+      <field name="steadfast_base_charge" readonly="1"/>
+      <field name="steadfast_weight_charge" readonly="1"/>
+      <field name="steadfast_cod_fee" readonly="1"/>
+      <field name="steadfast_delivery_charge" readonly="1"/>
+     </group>
+     <group string="Tracking">
+      <field name="steadfast_consignment_id" invisible="not steadfast_consignment_id"/>
+      <field name="steadfast_tracking_code" invisible="not steadfast_tracking_code"/>
+      <field name="steadfast_parcel_status"/>
+      <field name="steadfast_tracking_message" invisible="not steadfast_tracking_message"/>
+      <field name="steadfast_status_updated_at"/>
+      <field name="steadfast_status_terminal"/>
+      <field name="steadfast_tracking_link" widget="url" readonly="1" invisible="not steadfast_tracking_link"/>
+      <button name="action_open_steadfast_tracking" type="object" string="Track Steadfast" icon="fa-external-link" invisible="not steadfast_tracking_link"/>
+      <button name="action_steadfast_refresh_status" type="object" string="Refresh Status Now" icon="fa-refresh" invisible="not steadfast_consignment_id and not steadfast_tracking_code"/>
+     </group>
+     <div class="text-muted">Webhook updates are automatic when Steadfast can reach your public HTTPS webhook endpoint. The status is also refreshed when this delivery is opened while it is not terminal.</div>
+    </group>
+   </xpath>
+  </field>
+ </record>
+</odoo>

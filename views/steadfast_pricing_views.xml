@@ -1,0 +1,29 @@
+<odoo>
+    <record id="view_steadfast_pricing_wizard_form" model="ir.ui.view">
+        <field name="name">steadfast.pricing.wizard.form</field>
+        <field name="model">steadfast.pricing.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Steadfast Price Calculator">
+                <sheet>
+                    <group>
+                        <field name="carrier_id" readonly="1"/>
+                        <field name="picking_id" readonly="1"/>
+                        <field name="route"/>
+                        <field name="weight"/>
+                        <field name="cod_amount"/>
+                    </group>
+                    <group string="Calculated Charge">
+                        <field name="base_charge" readonly="1"/>
+                        <field name="weight_charge" readonly="1"/>
+                        <field name="cod_fee" readonly="1"/>
+                        <field name="total_charge" readonly="1" class="fw-bold"/>
+                    </group>
+                    <footer>
+                        <button name="action_apply" type="object" string="Apply to Delivery Order" class="btn-primary"/>
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
