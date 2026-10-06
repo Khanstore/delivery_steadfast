@@ -1,3 +1,8 @@
+- Added backward-compatible `steadfast_auth_token` alias for older carrier views.
+18.0.2.0.15
+
+- Added backward-compatible `steadfast_call_back_url` alias for older carrier views.
+
 # Steadfast Delivery — User Manual
 
 **Version: 18.0.1.0.0**
@@ -92,3 +97,8 @@ For accounting, configure a Steadfast COD Journal and a COD Receivable Account. 
 ## COD confirmation in 18.0.1.0.7
 
 A Delivery Order using Steadfast now has a dedicated **Confirm Steadfast COD** header button. Clicking it opens a modal showing the order COD amount and the exact amount to be collected. The user must click **Confirm COD Amount** in the modal before the shipment can be sent. Editing the COD amount after confirmation resets the confirmation.
+
+
+## Release 18.0.2.0.19
+
+This release includes an Odoo 18 compatibility fix for existing stock picking views that reference `carrier_tracking_time`. The field is now provided as a non-stored compatibility field and mirrors the Steadfast tracking status update time.

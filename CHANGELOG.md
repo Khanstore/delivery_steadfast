@@ -1,5 +1,30 @@
 # Changelog
 
+## 18.0.2.0.19 — 2026-10-06
+- Fixed Odoo 18 stock picking view upgrade failure caused by existing/inherited delivery views referencing the missing `carrier_tracking_time` field.
+- Added a non-stored compatibility field on `stock.picking`, mapped to the Steadfast status update timestamp.
+- Preserved the existing `carrier_tracking_status` compatibility field and Steadfast tracking flow.
+- Bumped the module version and ZIP release suffix.
+
+- Added backward-compatible `stock.picking.tracking_status_changed_on` alias for older tracking views; it mirrors `steadfast_status_updated_at` without creating a database column.
+- Fixed module upgrade failure caused by inherited delivery-order views referencing missing `stock.picking.carrier_tracking_status`; restored it as a non-stored compatibility field mirroring the Steadfast parcel status.
+- Added backward-compatible `steadfast_auth_token` alias for older carrier views.
+18.0.2.0.15
+
+- Added backward-compatible `steadfast_call_back_url` alias for older carrier views.
+
+
+## 18.0.2.0.14
+
+- Fixed module upgrade failure caused by `delivery.carrier.related_journal` changing from an existing integer Many2one column to Odoo 18 company-dependent JSONB storage.
+- Restored `related_journal` as a normal Many2one so existing Steadfast journal IDs upgrade safely without a database column conversion.
+# Changelog
+
+## 18.0.2.0.13
+- Changed the default Steadfast COD amount to use the full Sale Order `amount_total`, so the customer COD includes the delivery charge and applicable taxes instead of product-only value.
+- Updated the Steadfast carrier rate/COD calculation and Delivery Order COD default to use the same full order total.
+
+
 ## 18.0.1.0.13
 - Fixed Steadfast tracking-history ISO-8601 timestamps such as `2026-10-01T22:20:56.000000Z` being written directly to Odoo Datetime fields.
 - Steadfast COD journal entries are now posted automatically when created from a confirmed COD shipment.

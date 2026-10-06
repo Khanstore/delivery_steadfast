@@ -1,3 +1,8 @@
+- Added backward-compatible `steadfast_auth_token` alias for older carrier views.
+18.0.2.0.15
+
+- Added backward-compatible `steadfast_call_back_url` alias for older carrier views.
+
 # Steadfast Delivery — Developer Manual
 
 **Version: 18.0.1.0.0**
@@ -87,3 +92,8 @@ The source package includes Python syntax checks and Odoo test scaffolding. Full
 `delivery.carrier.steadfast_cod_journal` is an editable related alias pointing to `related_journal`; it exists to make the purpose of the field explicit in the new connector UI without breaking the legacy field name.
 
 The module therefore declares `account` explicitly in `__manifest__.py`.
+
+
+## Release 18.0.2.0.19
+
+This release includes an Odoo 18 compatibility fix for existing stock picking views that reference `carrier_tracking_time`. The field is now provided as a non-stored compatibility field and mirrors the Steadfast tracking status update time.

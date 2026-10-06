@@ -1,6 +1,6 @@
 {
     "name": "Steadfast Delivery",
-    "version": "18.0.2.0.13",
+    "version": "18.0.2.0.19",
     "category": "Inventory/Delivery",
     "summary": "Steadfast Courier delivery carrier integration for Odoo 18",
     "description": """

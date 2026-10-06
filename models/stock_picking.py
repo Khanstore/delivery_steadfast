@@ -22,6 +22,32 @@ class StockPicking(models.Model):
     steadfast_tracking_message = fields.Text(string="Steadfast Tracking Message", readonly=True, copy=False)
     steadfast_status_updated_at = fields.Datetime(string="Steadfast Status Updated", readonly=True, copy=False)
     steadfast_status_terminal = fields.Boolean(string="Steadfast Delivery Completed", readonly=True, copy=False)
+    # Backward-compatible generic carrier status field used by older inherited
+    # delivery-order views. For Steadfast it mirrors the parcel status. Keep it
+    # non-stored so it does not introduce a migration column into existing DBs.
+    carrier_tracking_status = fields.Char(
+        string="Carrier Tracking Status",
+        compute="_compute_carrier_tracking_status",
+        readonly=True,
+    )
+    # Compatibility field for delivery-order views from earlier/custom
+    # delivery integrations. Some existing databases still contain inherited
+    # stock.picking views that reference carrier_tracking_time. Odoo 18 does
+    # not provide that field by default, so keep a lightweight computed field
+    # here rather than requiring a database migration.
+    carrier_tracking_time = fields.Datetime(
+        string="Carrier Tracking Time",
+        compute="_compute_carrier_tracking_time",
+        readonly=True,
+    )
+    # Compatibility field used by older delivery-order tracking views.
+    # Keep it non-stored so existing databases do not need a column migration.
+    tracking_status_changed_on = fields.Datetime(
+        string="Tracking Status Changed On",
+        related="steadfast_status_updated_at",
+        readonly=True,
+        store=False,
+    )
     steadfast_is_carrier = fields.Boolean(string="Uses Steadfast", compute="_compute_steadfast_is_carrier", store=True)
 
     @api.model_create_multi
@@ -32,6 +58,22 @@ class StockPicking(models.Model):
                     and not picking.steadfast_cod_amount):
                 picking.steadfast_cod_amount = picking._steadfast_default_cod_amount(picking)
         return pickings
+
+    @api.depends("steadfast_parcel_status", "carrier_id", "carrier_id.delivery_type")
+    def _compute_carrier_tracking_status(self):
+        for picking in self:
+            if picking.carrier_id and picking.carrier_id.delivery_type == "steadfast":
+                picking.carrier_tracking_status = picking.steadfast_parcel_status or False
+            else:
+                picking.carrier_tracking_status = False
+
+    @api.depends("steadfast_status_updated_at", "carrier_id", "carrier_id.delivery_type")
+    def _compute_carrier_tracking_time(self):
+        for picking in self:
+            if picking.carrier_id and picking.carrier_id.delivery_type == "steadfast":
+                picking.carrier_tracking_time = picking.steadfast_status_updated_at or False
+            else:
+                picking.carrier_tracking_time = False
 
     @api.depends("carrier_id", "carrier_id.delivery_type")
     def _compute_steadfast_is_carrier(self):
@@ -71,8 +113,10 @@ class StockPicking(models.Model):
         if not picking.sale_id or not carrier or carrier.delivery_type != "steadfast":
             return 0.0
         order = picking.sale_id
-        delivery_total = sum(line.price_total for line in order.order_line if line.is_delivery)
-        return max(0.0, order.amount_total - delivery_total)
+        # COD is the full amount the customer is expected to pay on delivery.
+        # Odoo's sale order amount_total already includes the delivery line
+        # (and its taxes) when a delivery charge is part of the order.
+        return max(0.0, order.amount_total)
 
     def _steadfast_calculate_weight(self):
         self.ensure_one()

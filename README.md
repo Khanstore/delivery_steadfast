@@ -1,3 +1,8 @@
+- Added backward-compatible `steadfast_auth_token` alias for older carrier views.
+18.0.2.0.15
+
+- Added backward-compatible `steadfast_call_back_url` alias for older carrier views.
+
 # delivery_steadfast
 
 Odoo 18 delivery carrier integration for Steadfast Courier.

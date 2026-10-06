@@ -21,7 +21,13 @@ class DeliveryCarrier(models.Model):
     related_journal = fields.Many2one(
         "account.journal",
         string="Related Journal",
-        company_dependent=True,
+        # IMPORTANT: keep this field as a normal Many2one (integer FK column).
+        # Older versions of the Steadfast connector stored this field as a
+        # normal Many2one. Turning it into company_dependent changes Odoo 18's
+        # database column to JSONB, and PostgreSQL cannot cast the existing
+        # integer journal IDs to JSONB during module upgrade. The carrier has
+        # a company_id and the domain below already restricts the journal to
+        # the carrier's company, so company_dependent is not required here.
         domain="[(\'company_id\', \'=\', company_id), (\'type\', \'in\', [\'bank\', \'cash\'])]",
         help="Dedicated cash/bank journal used to track Steadfast COD transactions. "
              "This preserves compatibility with the earlier Steadfast connector.",
@@ -48,9 +54,24 @@ class DeliveryCarrier(models.Model):
         string="Webhook Auth Token", copy=False, password=True,
         help="Optional token supplied by Steadfast. When configured, the webhook verifies Authorization: Bearer <token> and the X-Signature HMAC-SHA256 header.",
     )
+    # Backward-compatible alias used by older Steadfast carrier views.
+    # Keep it as a non-stored related Char so it does not add a database
+    # column or trigger a migration.
+    steadfast_auth_token = fields.Char(
+        string="Authentication Token", related="steadfast_webhook_token",
+        readonly=False, copy=False, password=True,
+        help="Backward-compatible alias for the Steadfast webhook authentication token.",
+    )
     steadfast_webhook_path = fields.Char(
         string="Webhook Endpoint Path", compute="_compute_steadfast_webhook_path",
         readonly=True, help="Configure this path in Steadfast together with your public HTTPS domain."
+    )
+    # Backward-compatible alias for older carrier views that referenced the
+    # former callback field name. Keep it non-stored so it does not introduce
+    # any database column or migration requirement.
+    steadfast_call_back_url = fields.Char(
+        string="Callback URL", related="steadfast_webhook_path", readonly=True,
+        help="Backward-compatible alias for the Steadfast webhook endpoint path."
     )
 
     def _compute_steadfast_webhook_path(self):
@@ -59,7 +80,7 @@ class DeliveryCarrier(models.Model):
     steadfast_auto_book = fields.Boolean(string="Auto-create Shipment on Validation", default=True)
     steadfast_cod_from_order = fields.Boolean(
         string="Use Order Total as COD", default=True,
-        help="When enabled, COD is calculated from the sale order total excluding the delivery line.",
+        help="When enabled, COD is the full sale order total, including the delivery charge and applicable taxes.",
     )
     steadfast_tracking_base_url = fields.Char(
         string="Tracking Page URL",
@@ -138,7 +159,7 @@ class DeliveryCarrier(models.Model):
             return {"success": False, "price": 0.0, "error_message": _("Steadfast is not available for this destination."), "warning_message": False}
         route = self.steadfast_default_route or "inside_dhaka"
         weight = sum((line.product_id.weight or 0.0) * line.product_uom_qty for line in order.order_line if not line.is_delivery) or 0.5
-        cod = max(0.0, order.amount_total - sum(line.price_total for line in order.order_line if line.is_delivery)) if self.steadfast_cod_from_order else 0.0
+        cod = max(0.0, order.amount_total) if self.steadfast_cod_from_order else 0.0
         price = self._steadfast_base_charge(route) + self._steadfast_weight_charge(weight) + (cod * self.steadfast_cod_fee_percent / 100.0 if cod else 0.0)
         return {"success": True, "price": price, "error_message": False, "warning_message": False}
 
@@ -160,8 +181,9 @@ class DeliveryCarrier(models.Model):
         if not self.steadfast_cod_from_order or not picking.sale_id:
             return 0.0
         order = picking.sale_id
-        delivery_total = sum(line.price_total for line in order.order_line if line.is_delivery)
-        return max(0.0, order.amount_total - delivery_total)
+        # Collect the complete customer-facing order total. This includes the
+        # delivery charge and any taxes included in the sale order total.
+        return max(0.0, order.amount_total)
 
     def _steadfast_product_note(self, picking):
         lines = []
