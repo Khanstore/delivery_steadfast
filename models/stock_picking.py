@@ -171,6 +171,63 @@ class StockPicking(models.Model):
             picking.write({"steadfast_cod_enabled": True, "steadfast_cod_amount": self._steadfast_default_cod_amount(picking), "steadfast_cod_confirmed": False})
         return True
 
+    def button_validate(self):
+        """Validate the delivery and automatically book Steadfast afterwards.
+
+        The standard Odoo validation may return an Immediate Transfer or
+        Backorder wizard action before the picking actually reaches ``done``.
+        We therefore call the Steadfast booking only after ``super()`` has
+        completed and the picking state is really ``done``.
+
+        This keeps the existing manual Send-to-Steadfast flow intact while
+        making the Delivery Order Validate button the automatic booking point
+        for carriers configured with ``Auto-create Shipment on Validation``.
+        """
+        result = super().button_validate()
+
+        # Do not book while Odoo has opened a validation wizard. In particular,
+        # a backorder wizard can be returned after the current picking has
+        # already moved to ``done``; booking at that point would send the parcel
+        # before the user has decided how to handle the backorder. The wizard
+        # will call validation again after the user's choice.
+        if isinstance(result, dict) and result.get("res_model") in {
+            "stock.immediate.transfer",
+            "stock.backorder.confirmation",
+        }:
+            return result
+
+        completed = self.filtered(
+            lambda p: p.state == "done"
+            and p.carrier_id
+            and p.carrier_id.delivery_type == "steadfast"
+            and p.carrier_id.steadfast_auto_book
+        )
+
+        for picking in completed:
+            # Validation itself is the user's explicit send instruction, so an
+            # unconfirmed COD amount is accepted here using the current amount
+            # on the delivery order. This avoids reopening the COD wizard after
+            # the Validate button has already completed the stock operation.
+            if picking.steadfast_cod_enabled and not picking.steadfast_cod_confirmed:
+                amount = picking.steadfast_cod_amount
+                if not amount:
+                    amount = picking._steadfast_default_cod_amount(picking)
+                    picking.steadfast_cod_amount = amount
+                picking.steadfast_cod_confirmed = True
+                picking.message_post(
+                    body=_(
+                        "<b>Steadfast COD automatically confirmed on validation</b><br/>"
+                        "Amount to collect: <b>৳ %.2f</b>."
+                    ) % amount
+                )
+
+            # The carrier method already prevents duplicate consignments when a
+            # shipment exists for this picking. It also creates/posts the COD
+            # journal entry using the confirmed COD amount.
+            picking._steadfast_send_confirmed()
+
+        return result
+
     def send_to_shipper(self):
         """Intercept Odoo's standard Send to Shipper action for Steadfast.
 

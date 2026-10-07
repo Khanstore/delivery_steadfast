@@ -1,5 +1,12 @@
 # Changelog
 
+## 18.0.2.0.20 — 2026-10-07
+- Added automatic Steadfast shipment booking after a Delivery Order is successfully validated.
+- The booking runs only after Odoo reaches the `done` state, so Immediate Transfer and Backorder wizards are handled normally.
+- On validation, an unconfirmed COD amount is automatically confirmed and the current COD amount is sent to Steadfast.
+- Existing duplicate-shipment protection remains in place.
+
+
 ## 18.0.2.0.19 — 2026-10-06
 - Fixed Odoo 18 stock picking view upgrade failure caused by existing/inherited delivery views referencing the missing `carrier_tracking_time` field.
 - Added a non-stored compatibility field on `stock.picking`, mapped to the Steadfast status update timestamp.
