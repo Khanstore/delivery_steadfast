@@ -97,3 +97,8 @@ The module therefore declares `account` explicitly in `__manifest__.py`.
 ## Release 18.0.2.0.19
 
 This release includes an Odoo 18 compatibility fix for existing stock picking views that reference `carrier_tracking_time`. The field is now provided as a non-stored compatibility field and mirrors the Steadfast tracking status update time.
+
+
+## Destination route selection (18.0.2.0.21)
+
+`delivery.carrier._steadfast_destination_route(partner, pickup_location)` centralizes location-to-route detection. Sales quotations call `_steadfast_route_for_order(order)`; stock pickings use the same helper during creation and onchange. Location names are carrier-configurable comma-separated strings so deployments can tune the matching without code edits. The route remains editable on the Delivery Order as a deliberate override for ambiguous address data.

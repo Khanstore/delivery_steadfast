@@ -14,6 +14,87 @@ class DeliveryCarrier(models.Model):
         selection_add=[("steadfast", "Steadfast Courier")],
         ondelete={"steadfast": "set default"},
     )
+
+    @api.model
+    def _ensure_steadfast_delivery_carrier(self):
+        """Ensure the Steadfast delivery method exists and is active.
+
+        The carrier data file is intentionally not relied on for upgrades: an
+        existing database can retain the XML-ID while the carrier record has
+        been archived/deleted, or the carrier may never have been created by
+        an older release.  Running this idempotently on every module upgrade
+        makes the Delivery Methods list self-healing without overwriting the
+        merchant's API credentials, pricing, or other configuration.
+        """
+        self = self.sudo()
+        product = self.env.ref(
+            "delivery_steadfast.product_product_delivery_steadfast",
+            raise_if_not_found=False,
+        )
+        if not product:
+            product = self.env["product.product"].search(
+                [("default_code", "=", "Delivery_SF")], limit=1
+            )
+        if not product:
+            product = self.env["product.product"].create({
+                "name": "SteadFast Courier service",
+                "default_code": "Delivery_SF",
+                "type": "service",
+                "categ_id": self.env.ref("delivery.product_category_deliveries").id,
+                "sale_ok": False,
+                "purchase_ok": False,
+                "list_price": 0.0,
+                "invoice_policy": "order",
+            })
+
+        carrier = self.env.ref(
+            "delivery_steadfast.delivery_carrier_steadfast",
+            raise_if_not_found=False,
+        )
+        if not carrier:
+            carrier = self.search(
+                [("delivery_type", "=", "steadfast")],
+                order="id",
+                limit=1,
+            )
+        if carrier:
+            vals = {"active": True}
+            if carrier.delivery_type != "steadfast":
+                vals["delivery_type"] = "steadfast"
+            if not carrier.product_id:
+                vals["product_id"] = product.id
+            carrier.write(vals)
+            return carrier
+
+        journal = self.env.ref(
+            "delivery_steadfast.steadfast_journal",
+            raise_if_not_found=False,
+        )
+        if not journal:
+            journal = self.env["account.journal"].search(
+                [("code", "=", "SFC"), ("type", "in", ["bank", "cash"])],
+                limit=1,
+            )
+        if not journal:
+            company = self.env.company
+            journal = self.env["account.journal"].create({
+                "name": "SteadFast Courier",
+                "code": "SFC",
+                "type": "bank",
+                "company_id": company.id,
+                "currency_id": company.currency_id.id,
+            })
+
+        vals = {
+            "name": "SteadFast Courier",
+            "delivery_type": "steadfast",
+            "product_id": product.id,
+            "active": True,
+        }
+        if journal.company_id == product.company_id or not product.company_id:
+            vals["related_journal"] = journal.id
+        carrier = self.create(vals)
+        return carrier
     # Kept intentionally named `related_journal` for compatibility with the
     # user's earlier Steadfast connector and any existing inherited views.
     # It is the dedicated account journal used to identify/track Steadfast
@@ -93,10 +174,26 @@ class DeliveryCarrier(models.Model):
     steadfast_dhaka_outside_charge = fields.Float(string="Dhaka → Other District Base", default=115.0)
     steadfast_suburban_outside_charge = fields.Float(string="Sub-urban → Other District Base", default=135.0)
     steadfast_outside_same_city_charge = fields.Float(string="Outside Dhaka Same City Base", default=60.0)
+    steadfast_dhaka_city_locations = fields.Char(
+        string="Dhaka City Location Names", default="Dhaka, Dacca",
+        help="Comma-separated city/district names treated as inside Dhaka city. Match is case-insensitive.",
+    )
+    steadfast_dhaka_suburban_locations = fields.Char(
+        string="Dhaka Suburban Location Names",
+        default="Savar, Ashulia, Tongi, Gazipur, Keraniganj",
+        help="Comma-separated destination names charged at the Dhaka suburban rate. Adjust this list to match your courier's service zones.",
+    )
     steadfast_base_weight_kg = fields.Float(string="Included Weight (kg)", default=1.0)
     steadfast_extra_weight_step_kg = fields.Float(string="Extra Weight Step (kg)", default=1.0)
     steadfast_extra_weight_charge = fields.Float(string="Charge per Extra Weight Step", default=20.0)
     steadfast_cod_fee_percent = fields.Float(string="COD / Risk Fee (%)", default=1.0)
+    steadfast_ceil_to = fields.Selection(
+        [("0", "No rounding"), ("5", "Ceil to 5"), ("10", "Ceil to 10")],
+        string="Ceil Delivery Charge To",
+        default="0",
+        help="Round the final Steadfast delivery charge upward to the nearest 5 or 10. "
+             "For example, 63 becomes 65 when set to 5, and 63 becomes 70 when set to 10.",
+    )
     steadfast_default_route = fields.Selection([
         ("inside_dhaka", "Inside Dhaka City"),
         ("dhaka_suburban", "Dhaka City → Dhaka Sub-urban"),
@@ -114,6 +211,62 @@ class DeliveryCarrier(models.Model):
         help="Asset account used to reclassify COD receivables from the customer to Steadfast until settlement.",
     )
 
+    @staticmethod
+    def _steadfast_normalize_location(value):
+        """Normalize a Bangladesh location string for forgiving zone matching."""
+        return re.sub(r"[^a-z0-9]+", " ", (value or "").strip().lower()).strip()
+
+    def _steadfast_location_matches(self, value, configured_names):
+        normalized_value = self._steadfast_normalize_location(value)
+        if not normalized_value:
+            return False
+        names = [self._steadfast_normalize_location(item) for item in (configured_names or "").split(",")]
+        names = [item for item in names if item]
+        return any(normalized_value == name or normalized_value.startswith(name + " ") for name in names)
+
+    def _steadfast_destination_route(self, partner, pickup_location=None):
+        """Choose a price route from the actual delivery address, not carrier default.
+
+        Dhaka city and suburban zones are configurable on the carrier. When the
+        pickup city is outside Dhaka, same-city deliveries use the outside-city
+        rate; other destinations fall back to the configured Dhaka-origin routes.
+        """
+        self.ensure_one()
+        if not partner:
+            return self.steadfast_default_route or "inside_dhaka"
+
+        destination_city = partner.city or (partner.state_id.name if partner.state_id else "")
+        destination_state = partner.state_id.name if partner.state_id else ""
+        # Test suburban city names before the state name: suburbs such as
+        # Savar can have Dhaka as their state/district and must not be charged
+        # as inside Dhaka city merely because of that state value.
+        destination_is_suburban = (
+            self._steadfast_location_matches(destination_city, self.steadfast_dhaka_suburban_locations)
+            or self._steadfast_location_matches(destination_state, self.steadfast_dhaka_suburban_locations)
+        )
+        destination_is_dhaka = (
+            self._steadfast_location_matches(destination_city, self.steadfast_dhaka_city_locations)
+            or self._steadfast_location_matches(destination_state, self.steadfast_dhaka_city_locations)
+        ) and not destination_is_suburban
+
+        pickup_city = (pickup_location.city if pickup_location else "") or ""
+        pickup_is_dhaka = self._steadfast_location_matches(pickup_city, self.steadfast_dhaka_city_locations)
+        pickup_is_suburban = self._steadfast_location_matches(pickup_city, self.steadfast_dhaka_suburban_locations)
+
+        if destination_is_dhaka:
+            return "inside_dhaka" if not pickup_is_suburban else "dhaka_suburban"
+        if destination_is_suburban:
+            return "dhaka_suburban" if pickup_is_dhaka or not pickup_city else "suburban_outside"
+        if pickup_city and not pickup_is_dhaka and not pickup_is_suburban:
+            if self._steadfast_normalize_location(pickup_city) == self._steadfast_normalize_location(destination_city):
+                return "outside_same_city"
+        return "suburban_outside" if pickup_is_suburban else "dhaka_outside"
+
+    def _steadfast_route_for_order(self, order):
+        self.ensure_one()
+        pickup = self.steadfast_default_pickup_location_id
+        return self._steadfast_destination_route(order.partner_shipping_id, pickup)
+
     def _steadfast_base_charge(self, route):
         self.ensure_one()
         return {
@@ -130,6 +283,16 @@ class DeliveryCarrier(models.Model):
         step = self.steadfast_extra_weight_step_kg or 1.0
         import math
         return math.ceil(extra / step) * self.steadfast_extra_weight_charge if extra > 0 else 0.0
+
+    def _steadfast_ceil_delivery_charge(self, amount):
+        """Ceil the final delivery charge to the configured 5/10 increment."""
+        self.ensure_one()
+        increment = float(self.steadfast_ceil_to or 0.0)
+        amount = float(amount or 0.0)
+        if increment <= 0.0 or amount <= 0.0:
+            return amount
+        import math
+        return math.ceil((amount - 1e-9) / increment) * increment
 
     @api.constrains("steadfast_timeout")
     def _check_steadfast_timeout(self):
@@ -157,10 +320,11 @@ class DeliveryCarrier(models.Model):
             return {"success": False, "price": 0.0, "error_message": _("Not a Steadfast carrier."), "warning_message": False}
         if not self._match_address(order.partner_shipping_id):
             return {"success": False, "price": 0.0, "error_message": _("Steadfast is not available for this destination."), "warning_message": False}
-        route = self.steadfast_default_route or "inside_dhaka"
+        route = self._steadfast_route_for_order(order)
         weight = sum((line.product_id.weight or 0.0) * line.product_uom_qty for line in order.order_line if not line.is_delivery) or 0.5
         cod = max(0.0, order.amount_total) if self.steadfast_cod_from_order else 0.0
         price = self._steadfast_base_charge(route) + self._steadfast_weight_charge(weight) + (cod * self.steadfast_cod_fee_percent / 100.0 if cod else 0.0)
+        price = self._steadfast_ceil_delivery_charge(price)
         return {"success": True, "price": price, "error_message": False, "warning_message": False}
 
     @staticmethod
@@ -308,7 +472,8 @@ class DeliveryCarrier(models.Model):
                 base = self._steadfast_base_charge(picking.steadfast_route or self.steadfast_default_route)
                 weight_charge = self._steadfast_weight_charge(weight)
                 cod_fee = cod * self.steadfast_cod_fee_percent / 100.0 if cod else 0.0
-                picking.write({"steadfast_weight": weight, "steadfast_base_charge": base, "steadfast_weight_charge": weight_charge, "steadfast_cod_fee": cod_fee, "steadfast_delivery_charge": base + weight_charge + cod_fee})
+                total_charge = self._steadfast_ceil_delivery_charge(base + weight_charge + cod_fee)
+                picking.write({"steadfast_weight": weight, "steadfast_base_charge": base, "steadfast_weight_charge": weight_charge, "steadfast_cod_fee": cod_fee, "steadfast_delivery_charge": total_charge})
             existing = self.env["steadfast.shipment"].search([("picking_id", "=", picking.id)], limit=1)
             if existing and existing.consignment_id:
                 results.append({"exact_price": picking.carrier_id.fixed_price, "tracking_number": existing.tracking_code or existing.consignment_id})

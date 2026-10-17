@@ -31,11 +31,16 @@
                         <field name="steadfast_suburban_outside_charge"/>
                         <field name="steadfast_outside_same_city_charge"/>
                     </group>
+                    <group string="Location Zone Detection">
+                        <field name="steadfast_dhaka_city_locations"/>
+                        <field name="steadfast_dhaka_suburban_locations"/>
+                    </group>
                     <group string="Weight &amp; COD Rules">
                         <field name="steadfast_base_weight_kg"/>
                         <field name="steadfast_extra_weight_step_kg"/>
                         <field name="steadfast_extra_weight_charge"/>
                         <field name="steadfast_cod_fee_percent"/>
+                        <field name="steadfast_ceil_to"/>
                     </group>
                 </group>
             </xpath>

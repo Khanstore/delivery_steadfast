@@ -32,7 +32,7 @@
         <field name="inherit_id" ref="stock_delivery.view_picking_withcarrier_out_form"/>
         <field name="arch" type="xml">
             <label for="weight" position="before">
-                <button name="track_parcel" string="Track Now" type="object" class="oe_highlight"/>
+                <button name="action_open_steadfast_tracking" string="Track Now" type="object" class="oe_highlight" invisible="carrier_id.delivery_type != 'steadfast' or not steadfast_tracking_link"/>
                 <field name="carrier_tracking_status"/>
                 <field name="tracking_status_changed_on"/>
                 <field name="carrier_tracking_time"/>

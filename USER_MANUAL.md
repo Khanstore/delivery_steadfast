@@ -5,18 +5,16 @@
 
 # Steadfast Delivery — User Manual
 
-**Version: 18.0.1.0.0**
+**Version: 18.0.2.0.24**
 
 ## 1. Purpose
 This module connects Odoo 18 Delivery Methods with Steadfast Courier and provides a management interface for the documented Steadfast API operations.
 
 ## 2. Installation
-Copy the complete `delivery_steadfast` directory into an Odoo 18 addons directory. Restart Odoo, update the Apps list, and install **Steadfast Delivery**.
+Copy the complete `delivery_steadfast` directory into an Odoo 18 addons directory. Restart Odoo, update the Apps list, and install **Steadfast Delivery**. Version 18.0.2.0.24 also loads the module data that creates the default Steadfast Courier delivery method, service product, and COD journal. If the module is already installed, replace the entire module folder and click **Upgrade** in Apps so this data file is loaded.
 
 ## 3. Configure the carrier
-Inventory → Configuration → Delivery Methods → New.
-
-Set Provider to **Steadfast Courier**. Enter:
+Inventory → Configuration → Delivery Methods. The module should create a delivery method named **SteadFast Curier** (provider **Steadfast Courier**) automatically. Open that record to configure it. If it is not present after upgrading, click **New** and set Provider to **Steadfast Courier**. Enter:
 - API Base URL: `https://portal.packzy.com/api/v1`
 - API Key
 - Secret Key
@@ -32,6 +30,21 @@ Click **Test Steadfast**. The test uses `/ping`, which does not require credenti
 Set the Steadfast carrier on the delivery method/order. On delivery validation, Odoo's carrier integration calls the Steadfast create-order endpoint when the carrier integration level is configured to create shipments.
 
 The module sends invoice/order reference, customer name, phone, address, COD amount and note. Text is pre-cleaned and length-limited to the documented Steadfast limits.
+
+
+## Delivery price zones (version 18.0.2.0.21+)
+
+Steadfast delivery quotes now choose a route from the customer's shipping address instead of always using the carrier's default route. On a Delivery Order, the suggested route is refreshed when the carrier, destination partner, or pickup location changes. Staff can still correct the route manually if the address is incomplete or a courier classifies a location differently.
+
+In **Inventory → Configuration → Delivery Methods → Steadfast carrier → Steadfast Local Pricing**, configure:
+- **Inside Dhaka Base**: rate for Dhaka city.
+- **Dhaka → Sub-urban Base**: rate for configured Dhaka suburban destinations.
+- **Dhaka → Other District Base**: rate for other districts.
+- **Sub-urban → Other District Base** and **Outside Dhaka Same City Base**: rates for those routes.
+- **Dhaka City Location Names**: comma-separated city/district names recognized as Dhaka city (default: `Dhaka, Dacca`).
+- **Dhaka Suburban Location Names**: comma-separated names recognized as suburban locations (default: `Savar, Ashulia, Tongi, Gazipur, Keraniganj`).
+
+The matching is case-insensitive and uses the shipping partner's City, State, Street, and Street 2 fields. Make sure the customer's **City** field contains the correct location name. If your courier's zone boundaries differ, adjust the location lists and verify the suggested route before booking. The final amount still includes weight surcharge and the configured COD fee.
 
 ## 5. Shipment tracking
 Open Steadfast Courier → Shipments. Open a shipment and use **Refresh Status** or **Tracking History**. The module supports lookup by consignment ID, invoice and tracking code.
@@ -102,3 +115,10 @@ A Delivery Order using Steadfast now has a dedicated **Confirm Steadfast COD** h
 ## Release 18.0.2.0.19
 
 This release includes an Odoo 18 compatibility fix for existing stock picking views that reference `carrier_tracking_time`. The field is now provided as a non-stored compatibility field and mirrors the Steadfast tracking status update time.
+
+### Tracking button compatibility (v18.0.2.0.22)
+The delivery-order **Track Now** button uses the module's `action_open_steadfast_tracking` action and is shown only for Steadfast deliveries with an available tracking link. If upgrading from an older version, replace the complete `delivery_steadfast` addon folder with this release before restarting Odoo and upgrading the app.
+
+## Upgrade note for version 18.0.2.0.23
+
+This version retains a compatibility handler for older stock transfer views that call `track_parcel`. To ensure the fix is loaded, stop Odoo, replace the entire `delivery_steadfast` folder (do not merge files), restart Odoo, and upgrade the module from Apps. If an old database view remains, the compatibility handler keeps its button valid.

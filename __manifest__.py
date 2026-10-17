@@ -1,6 +1,6 @@
 {
     "name": "Steadfast Delivery",
-    "version": "18.0.2.0.20",
+    "version": "18.0.2.0.26",
     "category": "Inventory/Delivery",
     "summary": "Steadfast Courier delivery carrier integration for Odoo 18",
     "description": """
@@ -15,6 +15,8 @@ payments, police stations, fraud checks and webhooks.
     "license": "LGPL-3",
     "depends": ["account", "delivery", "stock_delivery", "sale_management"],
     "data": [
+        "data/delivery_steadfast_data.xml",
+        "data/delivery_steadfast_ensure.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
         "views/steadfast_cod_confirm_views.xml",

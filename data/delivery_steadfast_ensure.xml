@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Run on install and upgrade so the delivery method cannot disappear
+         simply because its carrier record was archived/deleted in the DB. -->
+    <function model="delivery.carrier" name="_ensure_steadfast_delivery_carrier"/>
+</odoo>

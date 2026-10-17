@@ -1,5 +1,40 @@
 # Changelog
 
+## 18.0.2.0.26
+- Added configurable Steadfast delivery-charge ceiling: no rounding, ceil to 5, or ceil to 10.
+- Applied the ceiling to both checkout delivery-rate calculation and the delivery charge stored when booking a shipment.
+
+
+## 18.0.2.0.25 — 2026-10-17
+- Fixed the actual missing Delivery Methods record problem.
+- Added an idempotent upgrade/install hook that ensures the SteadFast Courier delivery carrier exists and is active.
+- The hook restores an archived carrier and recreates the carrier if it is missing, without overwriting existing API credentials or pricing configuration.
+- Added fallback creation of the delivery service product and COD journal when their records are missing.
+- Kept the provider selection as `steadfast` so existing Steadfast functionality remains compatible.
+
+## 18.0.2.0.24 — 2026-10-17
+- Fixed the missing Steadfast delivery method: added `data/delivery_steadfast_data.xml` to the module manifest so the default `delivery.carrier` record is loaded during installation/upgrade.
+- The carrier record creates the Steadfast Courier delivery method and its required service product and COD journal when they do not already exist.
+- Kept the tracking compatibility method and location-based delivery pricing fixes.
+
+## 18.0.2.0.23 — 2026-10-17
+- Added a backward-compatible `stock.picking.track_parcel()` handler so legacy inherited views do not block module upgrades.
+- The compatibility handler delegates to the current Steadfast tracking action.
+- Retained route-based local delivery pricing and the current tracking button implementation.
+
+## 18.0.2.0.22 - 2026-10-17
+- Fixed the legacy delivery-order tracking button to call the implemented `action_open_steadfast_tracking` method instead of the missing `track_parcel` method.
+- Hide the legacy Track Now button unless the delivery uses Steadfast and has a tracking link.
+- Retained route-based delivery pricing for inside Dhaka, suburban Dhaka, outside Dhaka and other configured destinations.
+
+## 18.0.2.0.21 — 2026-10-17
+- Fixed delivery pricing so the sales-order carrier quote uses the destination's detected route instead of always using the carrier's default route.
+- Delivery Orders now select a route from the shipping address and selected pickup city; changing the carrier, customer/destination, or pickup location recalculates the suggested route.
+- Added configurable, comma-separated Dhaka city and Dhaka suburban location names to Steadfast Local Pricing settings.
+- Kept the route field editable so staff can manually correct a location when the customer's address is incomplete or unusual.
+
+# Changelog
+
 ## 18.0.2.0.20 — 2026-10-07
 - Added automatic Steadfast shipment booking after a Delivery Order is successfully validated.
 - The booking runs only after Odoo reaches the `done` state, so Immediate Transfer and Backorder wizards are handled normally.

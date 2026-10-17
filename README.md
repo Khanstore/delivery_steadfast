@@ -40,3 +40,5 @@ This release restores the legacy `related_journal` field used by the earlier Ste
 
 ### Webhook setup
 Configure the carrier's **Webhook Enabled** and optional **Webhook Auth Token** fields. In Steadfast, use the public HTTPS URL formed from your Odoo domain plus the displayed **Webhook Endpoint Path**, for example `https://your-domain.example/steadfast/webhook/12`. When a token is configured, the module validates the `Authorization: Bearer <token>` header and `X-Signature` HMAC-SHA256 of the raw JSON body. `Idempotency-Key` is used to ignore duplicate deliveries. Delivery-status events update the linked shipment and Odoo Delivery Order; `payment_request` events can fetch the payment and create the configured draft journal entry.
+
+Current package version: 18.0.2.0.23. This release includes a backward-compatible tracking action for legacy stock.picking views.

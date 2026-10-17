@@ -52,6 +52,19 @@ class StockPicking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Set the initial route from the delivery address when a Steadfast
+        # picking is created, while preserving an explicitly supplied route.
+        carrier_model = self.env["delivery.carrier"]
+        partner_model = self.env["res.partner"]
+        for vals in vals_list:
+            if vals.get("steadfast_route"):
+                continue
+            carrier = carrier_model.browse(vals.get("carrier_id")).exists() if vals.get("carrier_id") else carrier_model
+            if carrier and carrier.delivery_type == "steadfast":
+                partner = partner_model.browse(vals.get("partner_id")).exists() if vals.get("partner_id") else partner_model
+                vals["steadfast_route"] = carrier._steadfast_destination_route(
+                    partner, carrier.steadfast_default_pickup_location_id
+                ) if partner else (carrier.steadfast_default_route or "inside_dhaka")
         pickings = super().create(vals_list)
         for picking in pickings:
             if (picking.carrier_id and picking.carrier_id.delivery_type == "steadfast"
@@ -132,13 +145,15 @@ class StockPicking(models.Model):
             if picking.steadfast_is_carrier and picking.steadfast_cod_confirmed:
                 picking.steadfast_cod_confirmed = False
 
-    @api.onchange("carrier_id")
+    @api.onchange("carrier_id", "partner_id", "steadfast_pickup_location_id")
     def _onchange_steadfast_carrier(self):
         for picking in self:
             carrier = picking.carrier_id
             if carrier and carrier.delivery_type == "steadfast":
-                picking.steadfast_pickup_location_id = carrier.steadfast_default_pickup_location_id
-                picking.steadfast_route = carrier.steadfast_default_route or "inside_dhaka"
+                if not picking.steadfast_pickup_location_id:
+                    picking.steadfast_pickup_location_id = carrier.steadfast_default_pickup_location_id
+                pickup = picking.steadfast_pickup_location_id or carrier.steadfast_default_pickup_location_id
+                picking.steadfast_route = carrier._steadfast_destination_route(picking.partner_id, pickup)
                 if not picking.steadfast_cod_amount:
                     picking.steadfast_cod_amount = picking._steadfast_default_cod_amount(picking)
 
@@ -313,6 +328,16 @@ class StockPicking(models.Model):
             if shipment and not shipment.is_terminal: 
                 shipment.action_refresh_status()
         return True
+
+
+    def track_parcel(self):
+        """Backward-compatible handler for older installed picking views.
+
+        Some databases may retain a legacy stock.picking form view containing
+        a button named ``track_parcel``. Keep that button valid while routing
+        it through the current Steadfast tracking implementation.
+        """
+        return self.action_open_steadfast_tracking()
 
     def action_open_steadfast_tracking(self):
         self.ensure_one()
